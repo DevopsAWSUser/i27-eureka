@@ -22,5 +22,9 @@ pipeline {
         archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
       }
     }
+    stage ('Unit Test') {
+      steps {
+        echo "performing Unit Testsfor ${env.APPLICATION_NAME} application"
+        sh "mvn test"
   }
 }
