@@ -19,6 +19,7 @@ pipeline {
           mvn -version
           mvn clean package -DskipTests=true
         '''
+        archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
       }
     }
   }
