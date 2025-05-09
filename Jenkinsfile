@@ -22,9 +22,14 @@ pipeline {
         archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
       }
     }
-    stage ('Unit Test') {
+    stage('Unit Test') {
       steps {
-        echo "performing Unit Testsfor ${env.APPLICATION_NAME} application"
-        sh "mvn test"
+        echo "Performing Unit Tests for ${env.APPLICATION_NAME} application"
+        sh '''
+          export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
+          mvn test
+        '''
+      }
+    }
   }
 }
