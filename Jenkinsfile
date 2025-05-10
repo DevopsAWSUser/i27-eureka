@@ -5,6 +5,9 @@ pipeline {
     JAVA_HOME = '/usr/lib/jvm/java-17-amazon-corretto.x86_64'
     MAVEN_HOME = '/opt/apache-maven-3.8.8'
     APPLICATION_NAME = 'eureka'
+    SONAR_URL = "http://13.213.37.119:9000"
+    // SONAR_TOKEN = "sqa_708d81e52c57aeef4a9a4ed2dd5ec7ce47e2770b"
+    SONAR_TOKEN = credentials('SONAR_CRED')
   }
 
   stages {
@@ -39,8 +42,8 @@ pipeline {
           echo "starting Sonar Scan"
           mvn clean verify sonar:sonar \\
             -Dsonar.projectKey=i27-eureka \\
-            -Dsonar.host.url=http://13.213.37.119:9000 \\
-            -Dsonar.login=sqa_708d81e52c57aeef4a9a4ed2dd5ec7ce47e2770b
+            -Dsonar.host.url=${env.SONAR_URL}\\
+            -Dsonar.login=${env.SONAR_TOKEN}
         """
       }
     }
