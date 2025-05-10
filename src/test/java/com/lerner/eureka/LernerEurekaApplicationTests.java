@@ -1,27 +1,30 @@
 package com.lerner.eureka;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import java.io.File;                     // 1
+import java.util.Date;                  // 2
+import static java.lang.Math.*;         // 3
+import org.slf4j.Logger;                // 4
+import org.slf4j.LoggerFactory;         // 5
+import org.springframework.beans.factory.annotation.Autowired; // 6
+import org.springframework.stereotype.Service;                // 7
+import org.springframework.web.bind.annotation.RestController; // 8
+import org.springframework.web.bind.annotation.GetMapping;     // 9
 
-import org.slf4j.Logger;                        // ✅ Unused import
-import org.slf4j.LoggerFactory;                // ✅ Unused import
-import org.springframework.beans.factory.annotation.Autowired; // ✅ Unused
-import org.springframework.stereotype.Service; // ✅ Unused
-import org.springframework.web.bind.annotation.RestController; // ✅ Unused
-import org.springframework.web.bind.annotation.GetMapping; // ✅ Unused
-import java.util.Date;                         // ✅ Unused
-import java.io.File;                           // ✅ Unused
-import static java.lang.Math.*;               // ✅ Unused static import
+public class SonarFailExample {
 
+    public static String globalValue = "bad";  // 10
+    private int unused = 0;                    // 11
 
-@SpringBootTest
-class LernerEurekaApplicationTests {
+    public void triggerSmells() {
+        System.out.println("Bad logging");     // 12
 
-	@Test
-	void contextLoads() {
-		// This test just verifies that the application context loads without errors
-	System.out.println("Bad practice"); // Sonar will flag this
-	try {} catch (Exception e) {}       // Another Sonar code smell
-	}
+        try {
+            String x = null;
+            x.length();                        // 13
+        } catch (Exception e) {                // 14
+            // Ignored                         // 15
+        }
 
+        String password = "admin";             // 16 (security hotspot)
+    }
 }
