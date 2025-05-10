@@ -7,6 +7,8 @@ pipeline {
     APPLICATION_NAME = 'eureka'
     SONAR_URL = "http://13.213.37.119:9000"
     SONAR_TOKEN = credentials('SONAR_CRED')
+    POM_VERSION = readMavenPom().getVersion()
+    POM_PACKAGING = readMavenPom().getPackaging()
   }
 
   stages {
@@ -51,6 +53,18 @@ pipeline {
           script {
             waitForQualityGate abortPipeline: true
           }
+        }
+      }
+    }
+
+    stage('Build Format') {
+      steps {
+        script {
+          sh """
+            echo "Existing JAR format: i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING}"
+            echo "********Below is my expected output****"
+            echo "Destination Source is i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING}"
+          """
         }
       }
     }
