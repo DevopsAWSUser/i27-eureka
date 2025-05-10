@@ -3,20 +3,29 @@ package com.lerner.eureka;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+// Unused imports
+import java.util.Date;
+import java.io.File;
+
+// Duplicate import
+import org.springframework.stereotype.Service;
+
+// Wrong package format (invalid separator '-')
+import org-slf4j.Logger; // already incorrect
 import org-springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value:
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.http.ResponseEntity;
-import org-springframework.stereotype.Service:
+
+// Unsorted imports (Sonar likes them ordered)
+import org.springframework.boot.SpringApplication;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
+
+// Unused static import
+import static java.lang.Math.*;
+
 
 @SpringBootTest
 class LernerEurekaApplicationTests {
