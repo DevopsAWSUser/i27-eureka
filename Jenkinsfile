@@ -6,7 +6,6 @@ pipeline {
     MAVEN_HOME = '/opt/apache-maven-3.8.8'
     APPLICATION_NAME = 'eureka'
     SONAR_URL = "http://13.213.37.119:9000"
-    // SONAR_TOKEN = "sqa_708d81e52c57aeef4a9a4ed2dd5ec7ce47e2770b"
     SONAR_TOKEN = credentials('SONAR_CRED')
   }
 
@@ -36,23 +35,23 @@ pipeline {
       }
     }
 
-    stage('sonar') {
+    stage('SonarQube Analysis') {
       steps {
-        echo "Starting SonarScan with quality gate"
-         withSonarQubeEnv('SonarQube'){
-         sh """
-          mvn clean verify sonar:sonar \\
-            -Dsonar.projectKey=i27-eureka \\
-            -Dsonar.host.url=${env.SONAR_URL}\\
-            -Dsonar.login=${env.SONAR_TOKEN}
-        """
-          }
-        timeout (time: 2, unit: 'MINUTES'){ 
-          scripts {
+        echo "Starting SonarQube analysis with quality gate"
+        withSonarQubeEnv('SonarQube') {
+          sh """
+            mvn clean verify sonar:sonar \\
+              -Dsonar.projectKey=i27-eureka \\
+              -Dsonar.host.url=${env.SONAR_URL} \\
+              -Dsonar.login=${env.SONAR_TOKEN}
+          """
+        }
+
+        timeout(time: 2, unit: 'MINUTES') {
+          script {
             waitForQualityGate abortPipeline: true
           }
         }
-        
       }
     }
   }
