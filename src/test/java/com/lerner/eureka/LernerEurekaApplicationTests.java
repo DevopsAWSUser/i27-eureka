@@ -1,30 +1,34 @@
 package com.lerner.eureka;
 
-import java.io.File;                     // 1
-import java.util.Date;                  // 2
-import static java.lang.Math.*;         // 3
-import org.slf4j.Logger;                // 4
-import org.slf4j.LoggerFactory;         // 5
-import org.springframework.beans.factory.annotation.Autowired; // 6
-import org.springframework.stereotype.Service;                // 7
-import org.springframework.web.bind.annotation.RestController; // 8
-import org.springframework.web.bind.annotation.GetMapping;     // 9
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
-public class SonarFailExample {
+import java.util.Date; // unused
+import java.io.File;   // unused
+import static java.lang.Math.*; // unused
 
-    public static String globalValue = "bad";  // 10
-    private int unused = 0;                    // 11
+@SpringBootTest
+class LernerEurekaApplicationTests {
 
-    public void triggerSmells() {
-        System.out.println("Bad logging");     // 12
+    // Bad practice: unused field
+    private int unusedField = 42;
 
+    // Bad practice: hardcoded password
+    private String password = "admin123";
+
+    // Bad practice: empty catch block
+    public void badMethod() {
         try {
-            String x = null;
-            x.length();                        // 13
-        } catch (Exception e) {                // 14
-            // Ignored                         // 15
+            String s = null;
+            s.length(); // NullPointerException
+        } catch (Exception e) {
+            // intentionally ignored
         }
+    }
 
-        String password = "admin";             // 16 (security hotspot)
+    @Test
+    void contextLoads() {
+        // Just a placeholder test
+        badMethod();
     }
 }
