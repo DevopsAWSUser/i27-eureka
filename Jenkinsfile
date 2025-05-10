@@ -38,13 +38,21 @@ pipeline {
 
     stage('sonar') {
       steps {
-        sh """
-          echo "starting Sonar Scan"
+        echo "Starting SonarScan with quality gate"
+         withSonarQubeEnv('SonarQube'){
+         sh """
           mvn clean verify sonar:sonar \\
             -Dsonar.projectKey=i27-eureka \\
             -Dsonar.host.url=${env.SONAR_URL}\\
             -Dsonar.login=${env.SONAR_TOKEN}
         """
+          }
+        timeout (time: 2, unit: 'MINUTES'){ 
+          scripts {
+            waitForQualityGate abortPipeline: true
+          }
+        }
+        
       }
     }
   }
