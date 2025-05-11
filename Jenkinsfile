@@ -79,7 +79,7 @@ pipeline {
             echo "listing files in .cicd folder"
             ls -la ./.cicd
             echo "**********Building Docker Image *******************"
-            docker build \\
+            sudo docker build \\
               --pull \\
               --no-cache \\
               --force-rm \\
