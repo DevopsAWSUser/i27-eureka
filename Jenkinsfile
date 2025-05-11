@@ -9,7 +9,7 @@ pipeline {
     SONAR_TOKEN      = credentials('SONAR_CRED')
     POM_VERSION      = readMavenPom().getVersion()
     POM_PACKAGING    = readMavenPom().getPackaging()
-    DOCKER_HUB       = 'docker.io/DevopsAwsUser'
+    DOCKER_HUB       = 'docker.io/devopsawsuser'
     DOCKER_REPO      = 'i27eurekaproject'
   }
 
