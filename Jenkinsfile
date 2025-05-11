@@ -2,15 +2,15 @@ pipeline {
   agent { label 'maven-slave' }
 
   environment {
-    JAVA_HOME = '/usr/lib/jvm/java-17-amazon-corretto.x86_64'
-    MAVEN_HOME = '/opt/apache-maven-3.8.8'
+    JAVA_HOME        = '/usr/lib/jvm/java-17-amazon-corretto.x86_64'
+    MAVEN_HOME       = '/opt/apache-maven-3.8.8'
     APPLICATION_NAME = 'eureka'
-    SONAR_URL = "http://13.229.228.67:9000"
-    SONAR_TOKEN = credentials('SONAR_CRED')
-    POM_VERSION = readMavenPom().getVersion()
-    POM_PACKAGING = readMavenPom().getPackaging()
-    DOCKER_HUB = "docker.io/DevopsAwsUser"
-    DOCKER_REPO = "i27eurekaproject"
+    SONAR_URL        = 'http://13.229.228.67:9000'
+    SONAR_TOKEN      = credentials('SONAR_CRED')
+    POM_VERSION      = readMavenPom().getVersion()
+    POM_PACKAGING    = readMavenPom().getPackaging()
+    DOCKER_HUB       = 'docker.io/DevopsAwsUser'
+    DOCKER_REPO      = 'i27eurekaproject'
   }
 
   stages {
@@ -50,7 +50,6 @@ pipeline {
               -Dsonar.login=${env.SONAR_TOKEN}
           """
         }
-
         timeout(time: 2, unit: 'MINUTES') {
           script {
             waitForQualityGate abortPipeline: true
@@ -70,28 +69,26 @@ pipeline {
         }
       }
     }
-    stage ('Docker Build and Push') {
+
+    stage('Docker Build and Push') {
       steps {
         script {
           sh """
-             ls -la
-             cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd
-             echo "listing files in .cicd folder"
-             ls -la ./.cicd
-             echo "**********Building Docker Image *******************"
-             # docker build -t imagename .
-             docker build \
-               --pull \
-               --no-cache \
-               --force-rm \
-               --rm=true \
-               --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} \  
-               --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \
-               -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \
-               ./.cicd
-               
-             #docker.io/DevopsAWSUser/i27eurekaproject:tagname
-             """
+            ls -la
+            cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd
+            echo "listing files in .cicd folder"
+            ls -la ./.cicd
+            echo "**********Building Docker Image *******************"
+            docker build \\
+              --pull \\
+              --no-cache \\
+              --force-rm \\
+              --rm=true \\
+              --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} \\
+              --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \\
+              -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
+              ./.cicd
+          """
         }
       }
     }
