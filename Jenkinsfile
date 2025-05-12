@@ -91,37 +91,10 @@ pipeline {
               -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
               ./.cicd
 
-            // Docker hub, JFROG
+            # Docker hub, JFROG
             echo "**************** Logging to Docker Registry *****************"
             sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
-            sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT
-          """
-        }
-      }
-    }
-
-    stage('Docker Build and Push') {
-      steps {
-        script {
-          sh """
-            ls -la
-            cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd
-            echo "listing files in .cicd folder"
-            ls -la ./.cicd
-            echo "**********Building Docker Image *******************"
-            sudo docker build \\
-              --pull \\
-              --no-cache \\
-              --force-rm \\
-              --rm=true \\
-              --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} \\
-              --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \\
-              -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
-              ./.cicd
-           # Docker hub, JFROG
-           echo "**************** Logging to Docker Registry *****************"
-           sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
-           sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO:$GIT_COMMIT
+            sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT}
           """
         }
       }
