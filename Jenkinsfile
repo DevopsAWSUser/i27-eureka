@@ -90,11 +90,21 @@ pipeline {
               --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \\
               -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
               ./.cicd
-           # Docker hub, JFROG
-           echo "**************** Logging to Docker Registry *****************"
-           sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
-           sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT
+            echo "**************** Logging to Docker Registry *****************"
+            sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
+            sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT
           """
+        }
+      }
+    }
+
+    stage('Deploy to Dev') {
+      steps {
+        echo "******************** Deploying to Dev Environment ********************"
+        withCredentials([usernamePassword(credentialsId: 'maha_docker_dev_server_cred', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+          script {
+            sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_server_ip \"docker pull ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
+          }
         }
       }
     }
