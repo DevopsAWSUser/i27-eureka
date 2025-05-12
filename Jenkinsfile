@@ -100,31 +100,29 @@ pipeline {
       }
     }
 
-    stage('Deploy to Dev') {
+    stage('Docker Build and Push') {
       steps {
-        echo "******************** Deploying to Dev Environment ********************"
-        withCredentials([usernamePassword(credentialsId: 'maha_docker_dev_server_cred', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-          // some block
-          // with this creddentials, i need to connect to dev environment 
-          // sshpass
-          script {
-            // Test to Pull the container on the docker server
-            sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"sudo docker pull ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
-            //sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"***"
-            echo "Stop the Container"
-            // If we execute the below command it will fail for the first time,, as continers are not availble, stop/remove will cause a issue.
-            // we can implement try catch block.
-            try {
-              sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"sudo docker stop ${env.APPLICATION_NAME}-dev\""
-              echo "Removing the Container"
-              sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"sudo docker rm ${env.APPLICATION_NAME}-dev\""
-            } catch(err) {
-              echo "Caught the error: $err"
-            }
-
-            // Run the container
-            sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker run --restart always --name ${env.APPLICATION_NAME}-dev -p 5761:8761 -d ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
-          }
+        script {
+          sh """
+            ls -la
+            cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd
+            echo "listing files in .cicd folder"
+            ls -la ./.cicd
+            echo "**********Building Docker Image *******************"
+            sudo docker build \\
+              --pull \\
+              --no-cache \\
+              --force-rm \\
+              --rm=true \\
+              --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} \\
+              --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \\
+              -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
+              ./.cicd
+           # Docker hub, JFROG
+           echo "**************** Logging to Docker Registry *****************"
+           sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
+           sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO:$GIT_COMMIT
+          """
         }
       }
     }
