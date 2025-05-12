@@ -9,8 +9,10 @@ pipeline {
     SONAR_TOKEN      = credentials('SONAR_CRED')
     POM_VERSION      = readMavenPom().getVersion()
     POM_PACKAGING    = readMavenPom().getPackaging()
-    DOCKER_HUB       = 'docker.io/devopsawsuser'
+    DOCKER_HUB       = 'docker.io/vanithascloud'
     DOCKER_REPO      = 'i27eurekaproject'
+    USER_NAME        = "vanithascloud"
+    DOCKER_CREDS     = credentials('dockerhub_cred')
   }
 
   stages {
@@ -88,6 +90,10 @@ pipeline {
               --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \\
               -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
               ./.cicd
+           # Docker hub, JFROG
+           echo "**************** Logging to Docker Registry *****************"
+           docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
+           docker push ${env.DOCKER_HUB}/i27-${env.APPLICATION_NAME}:$GIT_COMMIT
           """
         }
       }
