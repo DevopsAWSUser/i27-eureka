@@ -5,7 +5,7 @@ pipeline {
     JAVA_HOME        = '/usr/lib/jvm/java-17-amazon-corretto.x86_64'
     MAVEN_HOME       = '/opt/apache-maven-3.8.8'
     APPLICATION_NAME = 'eureka'
-    SONAR_URL        = 'http://13.229.228.67:9000'
+    SONAR_URL        = 'http://3.0.54.208:9000'
     SONAR_TOKEN      = credentials('SONAR_CRED')
     POM_VERSION      = readMavenPom().getVersion()
     POM_PACKAGING    = readMavenPom().getPackaging()
