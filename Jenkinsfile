@@ -44,6 +44,7 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         echo "Starting SonarQube analysis with quality gate"
+        withCredentials([string(credentialsId: 'SONAR_CRED', variable: 'SONAR_TOKEN')]) {
         withSonarQubeEnv('SonarQube') {
           sh """
             mvn clean verify sonar:sonar \\
@@ -51,6 +52,7 @@ pipeline {
               -Dsonar.host.url=${env.SONAR_URL} \\
               -Dsonar.login=${env.SONAR_TOKEN}
           """
+        }
         }
         timeout(time: 2, unit: 'MINUTES') {
           script {
