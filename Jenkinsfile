@@ -140,7 +140,7 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
                     echo "Caught the error: $err"
                 }
                 // Run the container
-                sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker run --restart always --name ${env.APPLICATION_NAME}-$envDeploy -p 5761:8761 -d ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
+                sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker run --restart always --name ${env.APPLICATION_NAME}-$envDeploy -p $hostPort:$contPort -d ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
             }
         }
     }
