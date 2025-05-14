@@ -1,6 +1,30 @@
 pipeline {
     agent { label 'maven-slave' }
 
+    parameters {
+        choice(name: 'sonarScans',
+               choices: 'no\nyes',
+               description: 'This will scan the applicaiton using sonar')
+        choice(name: 'buildOnly',
+               choices: 'no\nyes',
+               description: 'This will only build the application')
+        choice(name: 'dockerPush',
+               choices: 'no\nyes',
+               description: 'This will trigger the build, docker build and docker push')
+        choice(name: 'deployToDev',
+               choices: 'no\nyes',
+               description: 'This will Deploy my app to Dev env')
+        choice(name: 'deployToTest',
+               choices: 'no\nyes',
+               description: 'This will Deploy my app to Test env')
+        choice(name: 'deployToStage',
+               choices: 'no\nyes',
+               description: 'This will Deploy my app to Stage env')
+        choice(name: 'deployToProd',
+               choices: 'no\nyes',
+               description: 'This will Deploy my app to Prod env')
+    }
+
     environment {
         JAVA_HOME        = '/usr/lib/jvm/java-17-amazon-corretto.x86_64'
         MAVEN_HOME       = '/opt/apache-maven-3.8.8'
@@ -11,12 +35,20 @@ pipeline {
         POM_PACKAGING    = readMavenPom().getPackaging()
         DOCKER_HUB       = 'docker.io/vanithascloud'
         DOCKER_REPO      = 'i27eurekaproject'
-        USER_NAME        = "vanithascloud"
+        USER_NAME        = 'vanithascloud'
         DOCKER_CREDS     = credentials('dockerhub_cred')
     }
 
     stages {
         stage('Build') {
+            when {
+                anyOf {
+                    expression { params.dockerPush == 'yes' }
+                    expression { params.buildOnly == 'yes' }
+                }
+            }
+            // Build happens here 
+            // Only build should happen, no tests should be available
             steps {
                 echo "Building the ${env.APPLICATION_NAME} application"
                 sh '''
@@ -32,6 +64,12 @@ pipeline {
         }
 
         stage('Unit Test') {
+            when {
+                anyOf {
+                    expression { params.buildOnly == 'yes' }
+                    expression { params.dockerPush == 'yes' }
+                }
+            }
             steps {
                 echo "Performing Unit Tests for ${env.APPLICATION_NAME} application"
                 sh '''
@@ -42,6 +80,13 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            when {
+                anyOf {
+                    expression { params.sonarScans == 'yes' }
+                    expression { params.buildOnly == 'yes' }
+                    expression { params.dockerPush == 'yes' }
+                }
+            }
             steps {
                 echo "Starting SonarQube analysis with quality gate"
                 withSonarQubeEnv('SonarQube') {
@@ -73,6 +118,11 @@ pipeline {
         }
 
         stage('Docker Build and Push') {
+            when {
+                anyOf {
+                    expression { params.dockerPush == 'yes' }
+                }
+            }
             steps {
                 script {
                     sh """
@@ -101,6 +151,11 @@ pipeline {
         }
 
         stage('Deploy to Dev') { //5761
+            when {
+                anyOf {
+                    expression { params.deployToDev == 'yes' }
+                }
+            }
             steps {
                 script {
                     dockerDeploy('dev', '5761', '8761').call()
@@ -109,6 +164,11 @@ pipeline {
         }
 
         stage('Deploy to Test') { //6761
+            when {
+                anyOf {
+                    expression { params.deployToTest == 'yes' }
+                }
+            }
             steps {
                 script {
                     dockerDeploy('test', '6761', '8761').call()
@@ -118,7 +178,7 @@ pipeline {
     }
 }
 
-def dockerDeploy(envDeploy, hostPort, contPort) {    
+def dockerDeploy(envDeploy, hostPort, contPort) {
     return {
         echo "******************** Deploying to $envDeploy Environment ********************"
         withCredentials([usernamePassword(credentialsId: 'maha_docker_dev_server_cred', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
@@ -136,7 +196,7 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
                     sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker stop ${env.APPLICATION_NAME}-$envDeploy\""
                     echo "Removing the Container"
                     sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker rm ${env.APPLICATION_NAME}-$envDeploy\""
-                } catch(err) {
+                } catch (err) {
                     echo "Caught the error: $err"
                 }
                 // Run the container
