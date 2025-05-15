@@ -43,11 +43,13 @@ pipeline {
         stage('Build') {
             when {
                 anyOf {
-                    expression { params.dockerPush == 'yes' }
-                    expression { params.buildOnly == 'yes' }
+                    expression {
+                        params.dockerPush == 'yes'
+                        params.buildOnly == 'yes'
+                    }
                 }
             }
-            // Build happens here
+            // Build happens here 
             // Only build should happen, no tests should be available
             steps {
                 script {
@@ -56,11 +58,13 @@ pipeline {
             }
         }
 
-        stage('Unit Test') {
+        stage('Unit Tests') {
             when {
                 anyOf {
-                    expression { params.buildOnly == 'yes' }
-                    expression { params.dockerPush == 'yes' }
+                    expression {
+                        params.buildOnly == 'yes'
+                        params.dockerPush == 'yes'
+                    }
                 }
             }
             steps {
@@ -75,9 +79,11 @@ pipeline {
         stage('SonarQube Analysis') {
             when {
                 anyOf {
-                    expression { params.sonarScans == 'yes' }
-                    expression { params.buildOnly == 'yes' }
-                    expression { params.dockerPush == 'yes' }
+                    expression {
+                        params.sonarScans == 'yes'
+                        params.buildOnly == 'yes'
+                        params.dockerPush == 'yes'
+                    }
                 }
             }
             steps {
@@ -85,7 +91,7 @@ pipeline {
                 withSonarQubeEnv('SonarQube') {
                     sh """
                         mvn clean verify sonar:sonar \\
-                          -Dsonar.projectKey=i27-eureka \\
+                          -Dsonar.projectKey=i27-${env.APPLICATION_NAME}  \\
                           -Dsonar.host.url=${env.SONAR_URL} \\
                           -Dsonar.login=${env.SONAR_TOKEN}
                     """
@@ -113,71 +119,68 @@ pipeline {
         stage('Docker Build and Push') {
             when {
                 anyOf {
-                    expression { params.dockerPush == 'yes' }
+                    expression {
+                        params.dockerPush == 'yes'
+                    }
                 }
             }
             steps {
                 script {
-                    sh """
-                        ls -la
-                        cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd
-                        echo "Listing files in .cicd folder"
-                        ls -la ./.cicd
-                        echo "**********Building Docker Image**********"
-                        sudo docker build \\
-                          --pull \\
-                          --no-cache \\
-                          --force-rm \\
-                          --rm=true \\
-                          --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} \\
-                          --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \\
-                          -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
-                          ./.cicd
-
-                        # Docker Hub, JFrog
-                        echo "**********Logging in to Docker Registry**********"
-                        sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
-                        sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT}
-                    """
+                    dockerBuildandPush().call()
                 }
             }
         }
 
-        stage('Deploy to Dev') { // 5761
+        stage('Deploy to Dev') { //5761
             when {
                 anyOf {
-                    expression { params.deployToDev == 'yes' }
+                    expression {
+                        params.deployToDev == 'yes'
+                    }
                 }
             }
             steps {
                 script {
+                    imageValidation().call()
                     dockerDeploy('dev', '5761', '8761').call()
                 }
             }
         }
 
-        stage('Deploy to Test') { // 6761
+        stage('Deploy to Test') { //6761
             when {
                 anyOf {
-                    expression { params.deployToTest == 'yes' }
+                    expression {
+                        params.deployToTest == 'yes'
+                    }
                 }
             }
             steps {
                 script {
+                    imageValidation().call()
                     dockerDeploy('test', '6761', '8761').call()
                 }
+            }
+        }
+
+        stage('Clean') {
+            steps {
+                cleanWs()
             }
         }
     }
 }
 
+// Deploys the Docker container
 def dockerDeploy(envDeploy, hostPort, contPort) {
     return {
         echo "********** Deploying to $envDeploy Environment **********"
         withCredentials([usernamePassword(credentialsId: 'maha_docker_dev_server_cred', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-            // With these credentials, connect to dev environment using sshpass
+            // some block
+            // with this creddentials, i need to connect to dev environment 
+            // sshpass   
             script {
-                // Pull the container on the Docker server
+                // Test to Pull the container on the Docker server
                 sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker pull ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
 
                 echo "Stop the container"
@@ -197,12 +200,56 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
     }
 }
 
+// Maven build
 def buildApp() {
     return {
         echo "Building the ${env.APPLICATION_NAME} application"
         // Maven build should happen here
         sh "mvn clean package -DskipTests=true"
         archiveArtifacts artifacts: 'target/*jar', followSymlinks: false
+    }
+}
+
+// Pulls Docker image, builds & pushes if not found
+def imageValidation() {
+    return {
+        println("Pulling the Docker image")
+        try {
+            sh "docker pull ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT"
+            println("Pull Success,!!! Deploying !!!!!")
+        } catch (Exception e) {
+            println("OOPS, Docker image with this tag is not available")
+            println("So, Building the app, creating the image and pushing to registry")
+            buildApp().call()
+            dockerBuildandPush().call()
+        }
+    }
+}
+
+// Builds and pushes Docker image
+def dockerBuildandPush() {
+    return {
+        sh """
+            ls -la
+            cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd
+            echo "Listing files in .cicd folder"
+            ls -la ./.cicd
+            echo "**********Building Docker Image**********"
+            sudo docker build \\
+              --pull \\
+              --no-cache \\
+              --force-rm \\
+              --rm=true \\
+              --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} \\
+              --build-arg JAR_DEST=i27-${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING} \\
+              -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
+              ./.cicd
+
+            # Docker Hub, JFrog
+            echo "**********Logging in to Docker Registry**********"
+            sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
+            sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT}
+        """
     }
 }
 
