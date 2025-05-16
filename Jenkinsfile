@@ -157,33 +157,31 @@ pipeline {
             }
         }
 
-        stage ('Deploy to Prod') { //6761
+        stage('Validate Tag for Prod Deployment') {
             when {
                 allOf {
-                    anyOf {
-                        expression {
-                            params.deployToProd == 'yes'
-                        }
-                    }
-                    anyOf {
-                        branch 'release/*'
+                    expression { return params.deployToProd == 'yes' }
+                    expression {
+                        // Match tag format: vX.X.X (e.g., v1.2.3)
+                        def isValidTag = env.GIT_BRANCH ==~ /^refs\/tags\/v\d+\.\d+\.\d+$/
+                        return isValidTag
                     }
                 }
-
             }
             steps {
-              script {
-                imageValidation().call()
-                dockerDeploy('prod', '8761', '8761').call()
-              }
+                script {
+                    echo "✅ Valid tag detected: ${env.GIT_BRANCH}. Proceeding with production deployment."
+                    imageValidation().call()
+                    dockerDeploy('prod', '8761', '8761').call()
+                }
             }
         }
-        stage ('Clean') {
+
+        stage('Clean') {
             steps {
                 cleanWs()
             }
         }
-
     }
 }
 
