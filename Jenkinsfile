@@ -171,6 +171,47 @@ pipeline {
     }
 }
 
+        stage ('Deploy to Stage') { //6761
+            when {
+                anyOf {
+                    expression {
+                        params.deployToStage == 'yes'
+                    }
+                }
+            }
+            steps {
+              script {
+                imageValidation().call()
+                dockerDeploy('stage', '7761', '8761').call()
+              }
+            }
+        }
+
+        stage ('Deploy to Prod') { //6761
+            when {
+                anyOf {
+                    expression {
+                        params.deployToProd == 'yes'
+                    }
+                }
+            }
+            steps {
+              script {
+                imageValidation().call()
+                dockerDeploy('prod', '8761', '8761').call()
+              }
+            }
+        }
+        stage ('Clean') {
+            steps {
+                cleanWs()
+            }
+        }
+
+    }
+}
+
+
 // Deploys the Docker container
 def dockerDeploy(envDeploy, hostPort, contPort) {
     return {
