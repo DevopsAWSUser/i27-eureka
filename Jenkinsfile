@@ -171,7 +171,7 @@ pipeline {
             steps {
                 script {
                     timeout(time: 200, unit: 'SECONDS') {
-                      input message: "Deploy to ${env.APPLICATION_NAME} ?? ", 'yes', submitter: 'vanitha'
+                      input message: "Deploy to ${env.APPLICATION_NAME}?", submitter: 'vanitha'
                     }
                         
                     echo "Valid tag detected: ${env.GIT_BRANCH}. Proceeding with production deployment."
