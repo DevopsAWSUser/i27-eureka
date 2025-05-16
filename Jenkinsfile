@@ -163,8 +163,8 @@ pipeline {
                     expression { return params.deployToProd == 'yes' }
                     expression {
                         // Match tag format: vX.X.X (e.g., v1.2.3)
-                        def isValidTag = env.GIT_BRANCH ==~ /^refs\/tags\/v\d+\.\d+\.\d+$/
-                        return isValidTag
+                        def tagPattern = /^v\d+\.\d+\.\d+$/
+                        return env.BRANCH_NAME ==~ tagPattern
                     }
                 }
             }
