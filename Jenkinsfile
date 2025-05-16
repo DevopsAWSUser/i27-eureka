@@ -157,23 +157,33 @@ pipeline {
             }
         }
 
-        stage('Deploy to Prod') { //8761
+        stage ('Deploy to Prod') { //6761
             when {
-                expression { params.deployToProd == 'yes' }
+                allOf {
+                    anyOf {
+                        expression {
+                            params.deployToProd == 'yes'
+                        }
+                    }
+                    anyOf {
+                        branch 'release/*'
+                    }
+                }
+
             }
             steps {
-                script {
-                    imageValidation().call()
-                    dockerDeploy('prod', '8761', '8761').call()
-                }
+              script {
+                imageValidation().call()
+                dockerDeploy('prod', '8761', '8761').call()
+              }
             }
         }
-
-        stage('Clean') {
+        stage ('Clean') {
             steps {
                 cleanWs()
             }
         }
+
     }
 }
 
