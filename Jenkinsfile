@@ -43,10 +43,8 @@ pipeline {
         stage('Build') {
             when {
                 anyOf {
-                    expression {
-                        params.dockerPush == 'yes'
-                        params.buildOnly == 'yes'
-                    }
+                    expression { params.dockerPush == 'yes' }
+                    expression { params.buildOnly == 'yes' }
                 }
             }
             // Build happens here 
@@ -61,10 +59,8 @@ pipeline {
         stage('Unit Tests') {
             when {
                 anyOf {
-                    expression {
-                        params.buildOnly == 'yes'
-                        params.dockerPush == 'yes'
-                    }
+                    expression { params.buildOnly == 'yes' }
+                    expression { params.dockerPush == 'yes' }
                 }
             }
             steps {
@@ -79,11 +75,9 @@ pipeline {
         stage('SonarQube Analysis') {
             when {
                 anyOf {
-                    expression {
-                        params.sonarScans == 'yes'
-                        params.buildOnly == 'yes'
-                        params.dockerPush == 'yes'
-                    }
+                    expression { params.sonarScans == 'yes' }
+                    expression { params.buildOnly == 'yes' }
+                    expression { params.dockerPush == 'yes' }
                 }
             }
             steps {
@@ -118,11 +112,7 @@ pipeline {
 
         stage('Docker Build and Push') {
             when {
-                anyOf {
-                    expression {
-                        params.dockerPush == 'yes'
-                    }
-                }
+                expression { params.dockerPush == 'yes' }
             }
             steps {
                 script {
@@ -133,11 +123,7 @@ pipeline {
 
         stage('Deploy to Dev') { //5761
             when {
-                anyOf {
-                    expression {
-                        params.deployToDev == 'yes'
-                    }
-                }
+                expression { params.deployToDev == 'yes' }
             }
             steps {
                 script {
@@ -149,16 +135,36 @@ pipeline {
 
         stage('Deploy to Test') { //6761
             when {
-                anyOf {
-                    expression {
-                        params.deployToTest == 'yes'
-                    }
-                }
+                expression { params.deployToTest == 'yes' }
             }
             steps {
                 script {
                     imageValidation().call()
                     dockerDeploy('test', '6761', '8761').call()
+                }
+            }
+        }
+
+        stage('Deploy to Stage') { //7761
+            when {
+                expression { params.deployToStage == 'yes' }
+            }
+            steps {
+                script {
+                    imageValidation().call()
+                    dockerDeploy('stage', '7761', '8761').call()
+                }
+            }
+        }
+
+        stage('Deploy to Prod') { //8761
+            when {
+                expression { params.deployToProd == 'yes' }
+            }
+            steps {
+                script {
+                    imageValidation().call()
+                    dockerDeploy('prod', '8761', '8761').call()
                 }
             }
         }
@@ -171,61 +177,15 @@ pipeline {
     }
 }
 
-        stage ('Deploy to Stage') { //6761
-            when {
-                anyOf {
-                    expression {
-                        params.deployToStage == 'yes'
-                    }
-                }
-            }
-            steps {
-              script {
-                imageValidation().call()
-                dockerDeploy('stage', '7761', '8761').call()
-              }
-            }
-        }
-
-        stage ('Deploy to Prod') { //6761
-            when {
-                anyOf {
-                    expression {
-                        params.deployToProd == 'yes'
-                    }
-                }
-            }
-            steps {
-              script {
-                imageValidation().call()
-                dockerDeploy('prod', '8761', '8761').call()
-              }
-            }
-        }
-        stage ('Clean') {
-            steps {
-                cleanWs()
-            }
-        }
-
-    }
-
-
-
 // Deploys the Docker container
 def dockerDeploy(envDeploy, hostPort, contPort) {
     return {
         echo "********** Deploying to $envDeploy Environment **********"
         withCredentials([usernamePassword(credentialsId: 'maha_docker_dev_server_cred', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-            // some block
-            // with this creddentials, i need to connect to dev environment 
-            // sshpass   
             script {
-                // Test to Pull the container on the Docker server
                 sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker pull ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
 
                 echo "Stop the container"
-                // Try to stop/remove if container exists, else catch the error
                 try {
                     sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker stop ${env.APPLICATION_NAME}-$envDeploy\""
                     echo "Removing the container"
@@ -234,7 +194,6 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
                     echo "Caught the error: $err"
                 }
 
-                // Run the container
                 sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no $USERNAME@$docker_dev_server_ip \"docker run --restart always --name ${env.APPLICATION_NAME}-$envDeploy -p $hostPort:$contPort -d ${env.DOCKER_HUB}/${env.DOCKER_REPO}:$GIT_COMMIT\""
             }
         }
@@ -245,7 +204,6 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
 def buildApp() {
     return {
         echo "Building the ${env.APPLICATION_NAME} application"
-        // Maven build should happen here
         sh "mvn clean package -DskipTests=true"
         archiveArtifacts artifacts: 'target/*jar', followSymlinks: false
     }
@@ -286,7 +244,6 @@ def dockerBuildandPush() {
               -t ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT} \\
               ./.cicd
 
-            # Docker Hub, JFrog
             echo "**********Logging in to Docker Registry**********"
             sudo docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
             sudo docker push ${env.DOCKER_HUB}/${env.DOCKER_REPO}:${GIT_COMMIT}
