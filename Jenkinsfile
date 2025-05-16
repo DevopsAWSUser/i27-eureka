@@ -170,7 +170,7 @@ pipeline {
             }
             steps {
                 script {
-                    echo "✅ Valid tag detected: ${env.GIT_BRANCH}. Proceeding with production deployment."
+                    echo "Valid tag detected: ${env.GIT_BRANCH}. Proceeding with production deployment."
                     imageValidation().call()
                     dockerDeploy('prod', '8761', '8761').call()
                 }
