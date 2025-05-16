@@ -170,6 +170,10 @@ pipeline {
             }
             steps {
                 script {
+                    timeout(time: 200, unit: 'SECONDS') {
+                      input message: "Deploy to ${env.APPLICATION_NAME} ?? ", 'yes', submitter: 'vanitha'
+                    }
+                        
                     echo "Valid tag detected: ${env.GIT_BRANCH}. Proceeding with production deployment."
                     imageValidation().call()
                     dockerDeploy('prod', '8761', '8761').call()
